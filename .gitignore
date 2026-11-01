@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+dist_new2/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PyQt5
+*.ui
+*_rc.py
+
+# Test outputs
+*.log
+test_output/
+# 测试用临时目录（tests/__init__.py 的 make_test_dir 会在项目内创建）
+.test_tmp/
+
+# Generated files
+*.json
+!package.json
+# ✅ 以下 JSON 属于源码，必须纳入版本控制（原 *.json 规则会把翻译文件一并忽略）
+!src/translations/*.json
+
+# 运行时生成的用户配置（记录界面语言，不应入库）
+language_config.json
+
+# 工作区/IDE 生成的别名占位文件
+folder-alias.json
+private-folder-alias.json
+
+# Backup files
+*.bak
+*.backup
+*.old
+# exporter 原子写入的临时文件（_write_file_safely）
+*.rtg_tmp

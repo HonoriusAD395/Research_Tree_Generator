@@ -1,0 +1,9 @@
+# 科技树生成器 / Research Tree Generator 运行依赖
+# 用法: pip install -r requirements.txt
+#
+# 说明：程序为 PyQt5 桌面应用，除 PyQt5 外仅使用 Python 标准库
+# （re / json / os / zipfile / struct / shutil / copy / typing / dataclasses 等），
+# 因此无需其他第三方包。
+# 已知可运行环境：Python 3.14.2 + PyQt5 5.15.x（Windows）。
+
+PyQt5>=5.15.0

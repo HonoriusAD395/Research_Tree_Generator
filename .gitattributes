@@ -1,0 +1,34 @@
+# 换行与二进制策略 / Line-ending & binary policy
+#
+# 本仓库刻意不做自动换行转换（与 core.autocrlf=false 一致）：
+# 源码按提交时的原样保存，避免整文件「全行改写」的噪声 diff。
+* -text
+
+# Windows 批处理必须是 CRLF，否则 cmd.exe 解析异常
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# 二进制资源
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.bmp binary
+*.tga binary
+*.gif binary
+*.ico binary
+*.exe binary
+*.dll binary
+*.pyd binary
+*.zip binary
+*.7z binary
+*.mp4 binary
+*.psd binary
+*.ttf binary
+*.qm binary
+
+# GitHub 语言统计：把 .set 视为配置文件而非源码
+*.set linguist-language=Scheme
+*.spec linguist-language=Python
+
+# 语言包在 GitHub 上折叠显示
+src/translations/*.json linguist-generated=false
