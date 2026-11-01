@@ -11,11 +11,16 @@ Tech Tree Generator for Gates of Hell
 import sys
 import os
 from PyQt5.QtWidgets import QApplication
+from src.console import configure_stdio
 from src.main_window import MainWindow
 
 
 def main():
     """应用程序入口"""
+    # ✅ 先把标准输出切到 UTF-8：Windows 控制台默认是 GBK/cp1252，
+    # 直接输出中文会抛 UnicodeEncodeError，导致导出/解析流程因一行日志崩溃。
+    configure_stdio()
+
     # 设置全局异常处理（防止闪退）
     def exception_hook(exc_type, exc_value, exc_traceback):
         import traceback

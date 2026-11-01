@@ -14,6 +14,7 @@ import json
 import os
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict, field
+from src.console import safe_print
 
 
 @dataclass
@@ -427,7 +428,7 @@ class SetFileParser:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         
-        print(f"已保存到: {filepath}")
+        safe_print(f"已保存到: {filepath}")
     
     def load_from_json(self, filepath: str) -> Dict:
         """从 JSON 加载数据"""

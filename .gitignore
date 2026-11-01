@@ -68,3 +68,9 @@ private-folder-alias.json
 *.old
 # exporter 原子写入的临时文件（_write_file_safely）
 *.rtg_tmp
+
+# 发布产物：二进制只走 GitHub Releases，绝不入库
+*.zip
+*.7z
+*.tar.gz
+Research_Tree_Generator_v*_win64.zip

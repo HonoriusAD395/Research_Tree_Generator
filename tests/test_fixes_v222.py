@@ -376,7 +376,8 @@ class TestPositionsBlockPreserved(unittest.TestCase):
         """positions 块内形如 {"a" x y} 的行不得被改写为 requires/costs 行。"""
         in_file = os.path.join(self.tmp, "unit_research_pos.set")
         out_file = os.path.join(self.tmp, "unit_research_pos_out.set")
-        io.open(in_file, "w", encoding="utf-8", newline="").write(self._original())
+        with io.open(in_file, "w", encoding="utf-8", newline="") as f:
+            f.write(self._original())
 
         units = [
             Unit(name="a", costs=5, requires=[], position_x=0.0, position_y=0.0),
@@ -384,7 +385,8 @@ class TestPositionsBlockPreserved(unittest.TestCase):
             Unit(name="c", costs=1, requires=[], position_x=2.0, position_y=0.0),
         ]
         self.exporter.export(units, "t", out_file, in_file)
-        out = io.open(out_file, encoding="utf-8").read()
+        with io.open(out_file, encoding="utf-8") as f:
+            out = f.read()
 
         # 主块正常更新
         self.assertIn("costs 5", out, "主块单位行未被更新")
@@ -403,12 +405,14 @@ class TestPositionsBlockPreserved(unittest.TestCase):
         """仅存在于 positions 块且在画布上的单位，其 positions 行必须原样保留。"""
         in_file = os.path.join(self.tmp, "unit_research_pos2.set")
         out_file = os.path.join(self.tmp, "unit_research_pos2_out.set")
-        io.open(in_file, "w", encoding="utf-8", newline="").write(self._original())
+        with io.open(in_file, "w", encoding="utf-8", newline="") as f:
+            f.write(self._original())
 
         # 画布上只有 c（主块中没有它的行）
         units = [Unit(name="c", costs=1, requires=[], position_x=2.0, position_y=0.0)]
         self.exporter.export(units, "t", out_file, in_file)
-        out = io.open(out_file, encoding="utf-8").read()
+        with io.open(out_file, encoding="utf-8") as f:
+            out = f.read()
 
         self.assertIn('\t\t{"c" 2 0}', out,
                       "仅在 positions 块中的单位行被改写（破坏块语法）")
@@ -539,6 +543,85 @@ class TestDeadCodeRemoval(unittest.TestCase):
         src = _src("tech_tree_canvas.py")
         self.assertIn("def on_item_deleted(self, item, record_undo=True)", src,
                       "on_item_deleted 缺少 record_undo 参数（redo 依赖它避免污染撤销栈）")
+
+
+class TestConsoleEncodingRobustness(unittest.TestCase):
+    """控制台编码健壮性回归。
+
+    真实缺陷（CI 首次发版时暴露）：Windows 控制台默认 cp1252/GBK，导出流程里的
+    ``print("已导出到: ...")`` 会抛 UnicodeEncodeError，**让导出直接失败**。
+    打包为 windowed exe 时 sys.stdout 甚至为 None。
+
+    这里用 ascii 编码的流复现该场景，要求导出成功且不抛异常。
+    """
+
+    def setUp(self):
+        self.tmp = make_test_dir()
+
+    def tearDown(self):
+        remove_test_dir(self.tmp)
+
+    def _ascii_stdout(self):
+        """一个严格 ascii 编码的伪 stdout，遇到中文必定抛 UnicodeEncodeError。"""
+        return io.TextIOWrapper(io.BytesIO(), encoding="ascii", errors="strict",
+                                newline="")
+
+    def test_safe_print_survives_ascii_stream(self):
+        from src.console import safe_print
+        stream = self._ascii_stdout()
+        safe_print("已导出到: /tmp/中文.set", file=stream)   # 不得抛异常
+        self.assertGreaterEqual(len(stream.buffer.getvalue()), 0)
+
+    def test_safe_print_survives_none_stdout(self):
+        from src.console import safe_print
+        old = sys.stdout
+        sys.stdout = None
+        try:
+            safe_print("已导出到: /tmp/中文.set")             # 不得抛异常
+        finally:
+            sys.stdout = old
+
+    def test_exporter_does_not_crash_on_ascii_stdout(self):
+        """CI 失败路径：ascii 控制台下调用 exporter.export 必须成功。"""
+        from src.exporter import SetFileExporter
+        from src.parser import Unit
+
+        out = os.path.join(self.tmp, "unit_research_enc.set")
+        units = [Unit(name="enc_test", costs=3, requires=[], unit_type="",
+                      position_x=1.0, position_y=1.0)]
+
+        old = sys.stdout
+        sys.stdout = self._ascii_stdout()
+        try:
+            SetFileExporter().export(units, "enc", out)       # 不得抛异常
+        finally:
+            sys.stdout = old
+
+        self.assertTrue(os.path.exists(out), "导出未生成文件")
+        with io.open(out, encoding="utf-8") as f:
+            content = f.read()
+        self.assertIn("enc_test", content)
+
+    def test_debug_print_uses_safe_path(self):
+        """debug_print 也必须走安全输出（DEBUG=1 时不得因编码崩溃）。"""
+        src = _src("debug.py")
+        self.assertIn("safe_print", src,
+                      "debug_print 未走 safe_print，非 UTF-8 控制台会崩溃")
+        self.assertNotRegex(src, r"^\s*print\(",
+                            "debug.py 里仍有裸 print")
+
+    def test_no_bare_print_in_source(self):
+        """源码里不得残留裸 print：全部走 safe_print。"""
+        offenders = []
+        for name in sorted(os.listdir(os.path.join(project_root, "src"))):
+            if not name.endswith(".py") or name == "console.py":
+                continue
+            path = os.path.join(project_root, "src", name)
+            for lineno, line in enumerate(
+                    io.open(path, encoding="utf-8").read().split("\n"), 1):
+                if line.lstrip().startswith("print("):
+                    offenders.append((name, lineno, line.strip()[:60]))
+        self.assertEqual(offenders, [], f"存在裸 print: {offenders[:5]}")
 
 
 if __name__ == "__main__":

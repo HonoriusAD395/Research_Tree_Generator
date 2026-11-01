@@ -12,6 +12,7 @@ import json
 import os
 from typing import Dict
 from PyQt5.QtCore import QObject
+from src.console import safe_print
 
 
 class I18nManager(QObject):
@@ -56,7 +57,7 @@ class I18nManager(QObject):
                     if lang in self.SUPPORTED_LANGUAGES:
                         self._current_language = lang
             except Exception as e:
-                print(f"Failed to load language config: {e}")
+                safe_print(f"Failed to load language config: {e}")
     
     def _save_language_config(self):
         """保存语言配置"""
@@ -65,7 +66,7 @@ class I18nManager(QObject):
             with open(config_path, 'w', encoding='utf-8') as f:
                 json.dump({'language': self._current_language}, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"Failed to save language config: {e}")
+            safe_print(f"Failed to save language config: {e}")
     
     def _load_translations(self):
         """加载所有翻译文件"""
@@ -89,7 +90,7 @@ class I18nManager(QObject):
                     with open(lang_file, 'r', encoding='utf-8') as f:
                         self._translation_files[lang_code] = json.load(f)
                 except Exception as e:
-                    print(f"Failed to load {lang_file}: {e}")
+                    safe_print(f"Failed to load {lang_file}: {e}")
                     self._translation_files[lang_code] = {}
             else:
                 self._translation_files[lang_code] = {}
@@ -107,9 +108,9 @@ class I18nManager(QObject):
         if language_code in self.SUPPORTED_LANGUAGES:
             self._current_language = language_code
             self._save_language_config()  # 保存配置
-            print(f"Language switched to: {language_code} (restart required)")
+            safe_print(f"Language switched to: {language_code} (restart required)")
         else:
-            print(f"Unsupported language: {language_code}")
+            safe_print(f"Unsupported language: {language_code}")
     
     def get_current_language(self) -> str:
         """获取当前语言代码"""

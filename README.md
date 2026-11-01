@@ -451,6 +451,8 @@ Name uses `nation` suffix → `squad_kda(gdr)`.
 - ✅ **Name collision check / 重名检查**: Creating a unit now also checks units that exist only in the research file / 新建单位重名检查现在也覆盖仅存在于 research 文件中的单位
 
 ### 🔧 Technical Improvements / 技术改进
+- ✅ **Console encoding fix / 控制台编码修复**: print() of Chinese text raised UnicodeEncodeError on non-UTF-8 consoles (cp1252/cp936), failing exports. All output now goes through safe_print() which degrades gracefully, and the app switches stdio to UTF-8 at startup / 修复非 UTF-8 控制台输出中文抛异常导致导出失败的问题
+
 - ✅ **Overlap detection O(N³) → O(N) scheduling / 重叠检测复杂度修复**: `_schedule_overlap_check()` used `QTimer.singleShot()`, which is a static method that always returns `None`, so the debounce never worked and every node scheduled its own full O(N²) scan (O(N³) total when loading N nodes). Now uses a real single-shot `QTimer` instance so a burst of calls collapses into one scan / 修复防抖完全失效导致的 O(N³) 加载代价
 - ✅ **No string building when logging is off / 关闭日志时零开销**: All 41 unguarded `debug_print(f"...")` calls across `main_window`, `property_panel`, `tech_tree_canvas` and `undo_manager` are now short-circuited by `if debug.DEBUG:` so f-strings are no longer built (and unconditional `stdout.flush()` calls removed). The undo path runs these per-unit during multi-select drags, so this is a real hot path / 全部 41 处调试输出改为 DEBUG 短路（撤销路径在多选拖动时逐单位调用，属真实热路径）
 - ✅ **Incremental highlight repaint / 高亮增量重绘**: Node borders are only repainted when overlap/highlight state actually changes / 仅在样式真正变化时重绘节点

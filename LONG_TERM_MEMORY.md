@@ -1258,6 +1258,40 @@ AI-Reviewed-by: HonoriusAD395
 **如何复检**：搜索 `^## ` 统计中英文标题数；或用脚本对比同名文件的标题数量。
 注意：README 的「版本历史」是共享章节，不应计入英文手册。
 
+### 9.12 控制台编码缺陷 / Console Encoding Defect（CI 首次发版时暴露）
+
+**发现过程**：推送到 GitHub 后，Actions 在 `Unit tests` 步骤失败，本地却全部通过。
+
+**根因**：`src/exporter.py`、`src/parser.py` 里直接 `print("已导出到: ...")`。
+Windows 控制台默认编码是 `cp1252`（英文系统）或 `cp936`（中文系统），
+`print` 非 ASCII 字符会抛 `UnicodeEncodeError`：
+
+```
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-3
+  File "src/exporter.py", line 191, in _export_simple
+    print(f"已导出到: {output_path}")
+```
+
+**影响**：这是**真实产品缺陷**，不是 CI 配置问题 —— 用户在非 UTF-8 控制台从源码
+运行并导出时，导出流程会因为一行日志而失败。打包为 windowed exe 时
+`sys.stdout` 还可能为 `None`，`print` 会再抛 `AttributeError`。
+
+**修复**：
+1. 新增 `src/console.py`：`configure_stdio()` 把 stdout/stderr 切到 UTF-8 容错；
+   `safe_print()` 在编码不兼容或 stream 为 `None` 时静默降级（有损转换后写）。
+2. 把 `src/` 下全部裸 `print(` 换成 `safe_print(`（exporter 3、parser 1、i18n 5）。
+3. `debug_print()` 也改走 `safe_print`（DEBUG=1 时同样不得崩溃）。
+4. `main.py` 启动即调用 `configure_stdio()`。
+5. CI 工作流加 `PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8` 作为第二层防御。
+6. 新增 5 项回归测试（`TestConsoleEncodingRobustness`）：ascii 流、`None` stdout、
+   真实导出路径、debug_print 走安全路径、源码无裸 `print`。
+
+**教训**：
+- 本地通过 ≠ CI 通过。**输出编码属于运行环境差异**，必须在 CI 环境验证。
+- 日志输出绝不能有能力中断业务逻辑；所有 I/O 边界都该容错。
+- 本次由"发布后 CI 失败"发现，说明**首次发版前应先跑一次 workflow_dispatch**
+  验证 CI，而不是等 tag 触发。
+
 ---
 
 **文档维护说明 / Document Maintenance**:

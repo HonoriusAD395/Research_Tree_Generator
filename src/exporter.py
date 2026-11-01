@@ -14,6 +14,7 @@ import re
 import shutil
 from typing import List, Dict, Tuple
 from src.parser import Unit
+from src.console import safe_print
 
 
 class SetFileExporter:
@@ -188,7 +189,7 @@ class SetFileExporter:
         content = "\n".join(lines)
         self._write_file_safely(output_path, content)
         
-        print(f"已导出到: {output_path}")
+        safe_print(f"已导出到: {output_path}")
         return output_path
     
     def _export_with_original_format(self, units: List[Unit], faction: str, output_path: str, original_file_path: str):
@@ -267,11 +268,11 @@ class SetFileExporter:
             content = "\n".join(result_lines)
             self._write_file_safely(output_path, content)
             
-            print(f"已导出到: {output_path} (保留原始格式)")
+            safe_print(f"已导出到: {output_path} (保留原始格式)")
             return output_path
             
         except Exception as e:
-            print(f"保留格式导出失败: {e}，使用简单导出")
+            safe_print(f"保留格式导出失败: {e}，使用简单导出")
             # 如果失败，回退到简单导出
             return self._export_simple(units, faction, output_path)
     

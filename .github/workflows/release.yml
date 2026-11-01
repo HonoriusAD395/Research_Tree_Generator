@@ -22,6 +22,13 @@ on:
 permissions:
   contents: write
 
+# 统一 UTF-8：Windows runner 默认 stdout 是 cp1252，输出中文会抛
+# UnicodeEncodeError（曾导致 CI 上单元测试失败）。代码里已用 safe_print 兜底，
+# 这里再加一层环境变量防御。
+env:
+  PYTHONUTF8: '1'
+  PYTHONIOENCODING: utf-8
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -79,3 +86,5 @@ jobs:
           generate_release_notes: true
           draft: false
           prerelease: false
+          # 允许覆盖同名附件：re-tag 或手动先发布过 Release 时不会 422 失败
+          overwrite: true
